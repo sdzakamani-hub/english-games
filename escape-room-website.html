@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grammar Escape — Past Tense Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & VARS ──────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0a0704;
+  --stone:    #141009;
+  --stone2:   #1c1610;
+  --stone3:   #2e2416;
+  --amber:    #e8a030;
+  --amber2:   #f5c060;
+  --amber3:   #c07018;
+  --amber4:   #8a4e10;
+  --red:      #c0392b;
+  --green:    #27ae60;
+  --text:     #f0e0c0;
+  --text2:    #b09060;
+  --text3:    #7a6040;
+  --shadow:   rgba(0,0,0,0.8);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ── NOISE TEXTURE OVERLAY ──────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ══════════════════════════════════════
+   NAV
+══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(8,5,2,0.92);
+  border-bottom: 1px solid rgba(232,160,48,0.18);
+  backdrop-filter: blur(10px);
+  padding: 0 clamp(16px,5vw,60px);
+  height: 62px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem; font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo span { color: var(--text2); font-weight: 400; }
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a {
+  color: var(--text3); text-decoration: none;
+  font-size: 0.82rem; letter-spacing: 1.5px;
+  font-family: 'Cinzel', serif;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--amber2); }
+.nav-cta {
+  background: var(--amber3) !important;
+  color: var(--bg) !important;
+  padding: 8px 18px;
+  border-radius: 5px;
+  transition: background 0.2s, transform 0.2s !important;
+}
+.nav-cta:hover { background: var(--amber) !important; transform: translateY(-1px) !important; }
+
+/* ══════════════════════════════════════
+   HERO
+══════════════════════════════════════ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  overflow: hidden;
+}
+
+/* Stone wall background */
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 40%, rgba(140,80,10,0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 30% at 20% 80%, rgba(90,40,0,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%, rgba(80,35,0,0.12) 0%, transparent 60%);
+  z-index: 0;
+}
+
+/* Subtle brick pattern */
+.hero::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 0; opacity: 0.04;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 38px, rgba(255,255,255,0.5) 38px, rgba(255,255,255,0.5) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 78px, rgba(255,255,255,0.5) 78px, rgba(255,255,255,0.5) 80px);
+}
+
+.hero > * { position: relative; z-index: 2; }
+
+/* Embers canvas */
+#embers {
+  position: absolute; inset: 0; z-index: 1;
+  pointer-events: none;
+}
+
+/* Torch left & right */
+.torch {
+  position: absolute; top: 18%; z-index: 3;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0;
+}
+.torch.left { left: clamp(20px,6vw,80px); }
+.torch.right { right: clamp(20px,6vw,80px); }
+.torch-flame {
+  font-size: clamp(1.8rem,4vw,2.8rem);
+  animation: flicker 1.6s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+  line-height: 1;
+}
+.torch.right .torch-flame { animation-delay: -0.7s; }
+@keyframes flicker {
+  0%   { transform: scaleX(1)   scaleY(1)   rotate(-1deg);  opacity: 0.9; }
+  30%  { transform: scaleX(0.9) scaleY(1.08) rotate(1.5deg); opacity: 1; }
+  60%  { transform: scaleX(1.05)scaleY(0.96) rotate(-2deg);  opacity: 0.85; }
+  100% { transform: scaleX(0.95)scaleY(1.04) rotate(1deg);   opacity: 0.95; }
+}
+.torch-body {
+  width: clamp(10px,2vw,18px);
+  height: clamp(40px,6vw,70px);
+  background: linear-gradient(to bottom, #8a5020, #5a3010);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 20px rgba(232,140,30,0.4);
+}
+.torch-glow {
+  position: absolute; top: -10px; left: 50%;
+  transform: translateX(-50%);
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, rgba(255,160,40,0.35) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glow-pulse 1.6s ease-in-out infinite alternate;
+}
+.torch.right .torch-glow { animation-delay: -0.7s; }
+@keyframes glow-pulse {
+  from { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  to   { opacity: 1;   transform: translateX(-50%) scale(1.15); }
+}
+
+/* Badge */
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(232,160,48,0.10);
+  border: 1px solid rgba(232,160,48,0.30);
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 0.78rem; font-family: 'Cinzel', serif;
+  letter-spacing: 2px; color: var(--amber2);
+  margin-bottom: 24px;
+  animation: fadein 1s ease both;
+}
+@keyframes fadein { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+.hero-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(2.2rem, 8vw, 5.2rem);
+  font-weight: 900;
+  line-height: 1.08;
+  color: var(--amber);
+  text-shadow:
+    0 0 60px rgba(232,160,48,0.55),
+    0 0 120px rgba(200,100,20,0.30),
+    2px 3px 0 rgba(0,0,0,0.9);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+  animation: fadein 1s ease 0.15s both;
+}
+.hero-title em {
+  display: block;
+  font-style: normal;
+  font-size: 0.52em;
+  color: var(--text2);
+  letter-spacing: 6px;
+  text-shadow: none;
+  margin-bottom: 4px;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  color: var(--text2);
+  max-width: 540px;
+  line-height: 1.75;
+  margin-bottom: 36px;
+  animation: fadein 1s ease 0.3s both;
+  font-style: italic;
+}
+
+.hero-btns {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  animation: fadein 1s ease 0.45s both;
+  margin-bottom: 48px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--amber3), var(--amber));
+  color: var(--bg);
+  border: none; padding: 14px 34px;
+  border-radius: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.92rem; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer;
+  text-decoration: none; display: inline-block;
+  box-shadow: 0 4px 24px rgba(192,112,24,0.45);
+  transition: all 0.25s;
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(232,160,48,0.55);
+  background: linear-gradient(135deg, var(--amber), var(--amber2));
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text2); border: 1px solid var(--stone3);
+  padding: 14px 30px; border-radius: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.88rem; letter-spacing: 1px; cursor: pointer;
+  text-decoration: none; display: inline-block;
+  transition: all 0.25s;
+}
+.btn-secondary:hover { border-color: var(--amber3); color: var(--amber2); transform: translateY(-2px); }
+
+/* Stats strip */
+.hero-stats {
+  display: flex; gap: clamp(20px,5vw,50px);
+  justify-content: center; flex-wrap: wrap;
+  animation: fadein 1s ease 0.6s both;
+}
+.stat {
+  text-align: center;
+  border-left: 1px solid var(--stone3);
+  padding: 0 clamp(16px,3vw,30px);
+}
+.stat:first-child { border-left: none; }
+.stat-n {
+  font-family: 'Cinzel', serif; font-size: clamp(1.4rem,3vw,1.9rem);
+  color: var(--amber); font-weight: 700; display: block;
+}
+.stat-l { font-size: 0.75rem; color: var(--text3); letter-spacing: 1px; }
+
+/* Scroll cue */
+.scroll-cue {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: var(--text3); font-size: 0.72rem; font-family: 'Cinzel', serif;
+  letter-spacing: 2px; animation: fadein 1.2s ease 1s both;
+}
+.scroll-cue svg { animation: bounce 2s ease-in-out infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+/* ══════════════════════════════════════
+   SECTION COMMON
+══════════════════════════════════════ */
+section { position: relative; }
+
+.sec-inner {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: clamp(60px,8vw,100px) clamp(20px,5vw,40px);
+}
+
+.sec-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem; letter-spacing: 4px;
+  color: var(--amber3); margin-bottom: 12px;
+}
+.sec-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.5rem,4vw,2.2rem);
+  font-weight: 700; color: var(--amber2);
+  line-height: 1.25; margin-bottom: 18px;
+}
+.sec-body {
+  font-size: 1.05rem; color: var(--text2);
+  line-height: 1.85; max-width: 600px;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--stone3) 30%, var(--stone3) 70%, transparent);
+  margin: 0;
+}
+
+/* ══════════════════════════════════════
+   HOW IT WORKS
+══════════════════════════════════════ */
+#how { background: var(--stone); }
+
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px; margin-top: 44px;
+}
+
+.room-card {
+  background: var(--stone2);
+  border: 1px solid var(--stone3);
+  border-radius: 12px; overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: default;
+}
+.room-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.6), 0 0 40px rgba(232,160,48,0.10);
+}
+.rc-header {
+  padding: 22px 22px 16px;
+  border-bottom: 1px solid var(--stone3);
+  position: relative; overflow: hidden;
+}
+.rc-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(232,160,48,0.07) 0%, transparent 60%);
+}
+.rc-num {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem; letter-spacing: 3px;
+  color: var(--amber3); margin-bottom: 8px;
+  position: relative; z-index: 1;
+}
+.rc-ico { font-size: 2.2rem; display: block; margin-bottom: 8px; position: relative; z-index: 1; }
+.rc-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem; color: var(--amber2);
+  margin-bottom: 4px; position: relative; z-index: 1;
+}
+.rc-tense {
+  font-size: 0.82rem; color: var(--text3);
+  font-style: italic; position: relative; z-index: 1;
+}
+.rc-body { padding: 18px 22px; }
+.rc-body p { font-size: 0.9rem; color: var(--text2); line-height: 1.7; margin-bottom: 14px; }
+.rc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  background: rgba(232,160,48,0.08);
+  border: 1px solid rgba(232,160,48,0.20);
+  border-radius: 20px; padding: 3px 11px;
+  font-size: 0.75rem; color: var(--amber3);
+  font-family: 'Cinzel', serif; letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════════════
+   FEATURES
+══════════════════════════════════════ */
+#features { background: var(--bg); }
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px; margin-top: 44px;
+}
+.feat {
+  padding: 24px;
+  background: var(--stone);
+  border: 1px solid var(--stone3);
+  border-radius: 10px;
+  transition: border-color 0.25s, background 0.25s;
+}
+.feat:hover { border-color: var(--amber4); background: var(--stone2); }
+.feat-ico { font-size: 1.8rem; margin-bottom: 12px; }
+.feat-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.88rem; color: var(--amber2);
+  margin-bottom: 8px; letter-spacing: 0.5px;
+}
+.feat p { font-size: 0.88rem; color: var(--text3); line-height: 1.7; }
+
+/* ══════════════════════════════════════
+   TEACHER NOTES
+══════════════════════════════════════ */
+#teacher {
+  background: linear-gradient(180deg, var(--stone) 0%, var(--stone2) 100%);
+}
+
+.teacher-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 50px; align-items: center;
+}
+@media(max-width:680px){ .teacher-inner{grid-template-columns:1fr;} }
+
+.teacher-art {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.board {
+  background: #0e1a0e;
+  border: 3px solid #1e3020;
+  border-radius: 8px;
+  padding: 28px 24px;
+  width: 100%; max-width: 340px;
+  box-shadow: inset 0 2px 20px rgba(0,0,0,0.7), 0 8px 40px rgba(0,0,0,0.6);
+  font-family: 'Crimson Pro', serif;
+  position: relative;
+}
+.board::before {
+  content: '';
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  width: 80px; height: 14px;
+  background: #3a2a10;
+  border-radius: 4px 4px 0 0;
+}
+.board-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem; letter-spacing: 3px;
+  color: rgba(200,240,200,0.5); margin-bottom: 16px;
+  text-align: center;
+}
+.board-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 12px;
+}
+.board-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.board-text { font-size: 0.88rem; color: rgba(180,230,180,0.75); line-height: 1.6; }
+.board-text strong { color: rgba(220,255,220,0.9); }
+
+.teacher-content .sec-body { max-width: 100%; }
+.notes-list { list-style: none; margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
+.notes-list li {
+  display: flex; gap: 12px;
+  font-size: 0.95rem; color: var(--text2); line-height: 1.65;
+}
+.notes-list .ni { color: var(--amber3); font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+
+/* ══════════════════════════════════════
+   GAME SECTION
+══════════════════════════════════════ */
+#game {
+  background: var(--bg);
+  scroll-margin-top: 62px;
+}
+.game-header {
+  text-align: center;
+  padding: clamp(50px,7vw,80px) 20px 0;
+  max-width: 620px; margin: 0 auto;
+}
+.game-header .sec-label { justify-content: center; display: block; }
+.game-header .sec-title { text-align: center; }
+.game-header p {
+  font-size: 1rem; color: var(--text3);
+  line-height: 1.75; margin-bottom: 30px; font-style: italic;
+}
+
+/* ── Game embedded (same as before, wrapped in #gw) ── */
+#gw {
+  max-width: 820px; margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── Topbar ── */
+#topbar {
+  position: sticky; top: 62px; z-index: 100;
+  background: rgba(10,7,4,0.97);
+  border-bottom: 1px solid var(--amber4);
+  padding: 9px 18px;
+  display: flex; align-items: center; gap: 14px;
+  backdrop-filter: blur(6px);
+}
+.t-logo { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--amber); letter-spacing:2px; white-space:nowrap; }
+.steps { display:flex; gap:5px; flex:1; }
+.step { flex:1; height:5px; border-radius:3px; background:var(--stone3); transition:background 0.5s; }
+.step.active { background:var(--amber); }
+.step.done { background:var(--amber3); }
+#room-label { font-family:'Cinzel',serif; font-size:0.7rem; color:var(--text3); white-space:nowrap; }
+#reset-btn {
+  background:none; border:1px solid var(--stone3); color:var(--text3);
+  padding:3px 10px; border-radius:4px; cursor:pointer;
+  font-size:0.7rem; font-family:'Crimson Pro',serif; transition:all 0.2s;
+}
+#reset-btn:hover { border-color:var(--amber3); color:var(--amber3); }
+
+.gwrap { max-width:780px; margin:0 auto; padding:24px 18px 50px; }
+
+/* ── room/panel/shelf/etc — same as original, scoped ── */
+.g-room { display:none; animation:rise 0.45s ease; }
+.g-room.on { display:block; }
+@keyframes rise { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
+
+.rh { text-align:center; margin-bottom:24px; }
+.rh-title {
+  font-family:'Cinzel',serif;
+  font-size:clamp(1.4rem,4vw,1.9rem); color:var(--amber);
+  text-shadow:0 0 26px rgba(232,160,48,0.42); margin-bottom:4px;
+}
+.rh-sub { font-size:0.88rem; color:var(--text2); font-style:italic; }
+
+.g-panel {
+  background:var(--stone); border:1px solid var(--stone3); border-radius:10px;
+  padding:16px 20px; margin-bottom:16px; font-size:1rem; line-height:1.65;
+}
+.g-panel strong { color:var(--amber2); }
+
+.hint-btn {
+  display:block; margin:0 auto 14px;
+  background:none; border:1px dashed var(--stone3); color:var(--text3);
+  padding:5px 16px; border-radius:20px; cursor:pointer;
+  font-size:0.83rem; font-family:'Crimson Pro',serif; transition:all 0.2s;
+}
+.hint-btn:hover { border-color:var(--amber3); color:var(--amber3); }
+.hint-box {
+  display:none; background:rgba(232,160,48,0.05);
+  border:1px solid rgba(232,160,48,0.20);
+  border-radius:8px; padding:14px 18px; margin-bottom:16px;
+  font-size:0.88rem; line-height:1.7;
+}
+.hint-box.on { display:block; }
+.hint-box h4 { font-family:'Cinzel',serif; font-size:0.85rem; color:var(--amber2); margin-bottom:8px; }
+.htable { width:100%; border-collapse:collapse; font-size:0.83rem; margin-top:5px; }
+.htable th { background:rgba(232,160,48,0.10); padding:5px 9px; text-align:left; color:var(--amber2); }
+.htable td { padding:4px 9px; border-bottom:1px solid var(--stone3); }
+.htable tr:last-child td { border-bottom:none; }
+.eg {
+  background:rgba(232,160,48,0.07); border-left:3px solid var(--amber3);
+  padding:7px 12px; border-radius:0 6px 6px 0; margin:7px 0; font-size:0.88rem;
+}
+
+/* shelf */
+.shelf { display:flex; flex-direction:column; gap:9px; margin-bottom:20px; }
+.book {
+  background:var(--stone2); border:1px solid var(--stone3);
+  border-left:5px solid var(--amber3); border-radius:6px;
+  padding:12px 52px 12px 14px; cursor:pointer; position:relative;
+  font-size:0.97rem; line-height:1.55;
+  transition:border-color 0.2s, background 0.2s, transform 0.15s; user-select:none;
+}
+.book:hover:not(.picked):not(.shaking) { border-color:var(--amber); background:var(--stone3); transform:translateX(4px); }
+.book .v { font-weight:700; color:var(--amber2); text-decoration:underline; text-underline-offset:3px; }
+.book.picked { background:rgba(39,174,96,0.12); border-color:var(--green); cursor:default; transform:none; }
+.book.picked .v { color:#6ee7a0; }
+.book.shaking { animation:shk 0.42s ease; border-color:var(--red); background:rgba(192,57,43,0.14); }
+@keyframes shk { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+.book-ltr { position:absolute; right:13px; top:50%; transform:translateY(-50%); font-family:'Cinzel',serif; font-size:1.4rem; color:#6ee7a0; opacity:0; transition:opacity 0.35s; }
+.book.picked .book-ltr { opacity:1; }
+
+.kw-label { text-align:center; color:var(--text3); font-size:0.8rem; margin-bottom:7px; }
+.kw-row { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.kw-tile {
+  width:44px; height:52px; background:var(--stone2); border:2px solid var(--stone3);
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  font-family:'Cinzel',serif; font-size:1.4rem; color:var(--text3); transition:all 0.3s;
+}
+.kw-tile.lit { background:rgba(232,160,48,0.16); border-color:var(--amber); color:var(--amber2); animation:pop 0.28s ease; }
+@keyframes pop { 0%{transform:scale(0.6)} 60%{transform:scale(1.12)} 100%{transform:scale(1)} }
+
+/* case notes */
+.case-notes {
+  background:#160f05; border:1px solid #3a2a10; border-radius:8px;
+  padding:20px 22px; font-size:1rem; line-height:2.2; margin-bottom:16px; position:relative;
+}
+.case-notes::before {
+  content:'📋  DETECTIVE MORGAN — CASE NOTES';
+  display:block; font-family:'Cinzel',serif;
+  font-size:0.7rem; color:var(--text3); letter-spacing:2px; margin-bottom:12px;
+}
+.err-span {
+  background:rgba(192,57,43,0.16); border-bottom:2px solid var(--red);
+  padding:2px 4px; border-radius:3px; color:#f08070; cursor:pointer;
+  white-space:nowrap; position:relative; transition:background 0.2s;
+}
+.err-span:hover { background:rgba(192,57,43,0.28); }
+.err-span.ok { background:rgba(39,174,96,0.12); border-bottom-color:var(--green); color:#80e0a0; cursor:default; }
+.err-span.bad-flash { animation:shk 0.4s ease; }
+.cd {
+  position:absolute; top:calc(100% + 4px); left:0;
+  background:#120a04; border:1px solid var(--amber3); border-radius:7px; z-index:60;
+  min-width:190px; box-shadow:0 6px 22px rgba(0,0,0,0.8); overflow:hidden;
+}
+.cd div { padding:8px 14px; cursor:pointer; font-size:0.9rem; transition:background 0.15s; }
+.cd div:hover { background:rgba(232,160,48,0.10); }
+.cd div+div { border-top:1px solid var(--stone3); }
+.safe-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:18px; }
+.safe-icon { font-size:2.8rem; transition:all 0.5s; }
+.safe-icon.open { animation:jiggle 0.5s ease; }
+@keyframes jiggle { 0%{transform:scale(1)} 25%{transform:scale(1.2) rotate(-8deg)} 50%{transform:scale(1.2) rotate(8deg)} 75%{transform:scale(1.1) rotate(-3deg)} 100%{transform:scale(1)} }
+.fix-count { font-size:0.88rem; color:var(--text2); }
+.fix-count span { color:var(--amber); font-weight:700; }
+
+/* vault puzzles */
+.puzzles { display:flex; flex-direction:column; gap:16px; margin-bottom:20px; }
+.pcard { background:var(--stone); border:1px solid var(--stone3); border-radius:9px; padding:16px; transition:border-color 0.4s; }
+.pcard.done { border-color:var(--green); background:rgba(39,174,96,0.07); }
+.pcard-hd { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--text3); letter-spacing:1px; margin-bottom:10px; }
+.evt-pair { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px; }
+@media(max-width:500px){ .evt-pair{grid-template-columns:1fr;} }
+.evt { background:var(--stone2); border-radius:6px; padding:9px 11px; font-size:0.88rem; line-height:1.5; }
+.evt-lbl { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--amber3); margin-bottom:3px; }
+.q-lbl { font-size:0.8rem; color:var(--text3); font-style:italic; margin-bottom:7px; }
+.choices { display:flex; flex-direction:column; gap:6px; }
+.cbtn {
+  background:var(--stone2); border:1px solid var(--stone3); border-radius:7px;
+  padding:9px 13px; text-align:left; color:var(--text);
+  font-family:'Crimson Pro',serif; font-size:0.93rem; line-height:1.5; cursor:pointer; transition:all 0.2s;
+}
+.cbtn:hover:not(:disabled) { border-color:var(--amber3); background:rgba(232,160,48,0.07); }
+.cbtn.right { background:rgba(39,174,96,0.12); border-color:var(--green); cursor:default; }
+.cbtn.wrong { background:rgba(192,57,43,0.14); border-color:var(--red); }
+.cbtn:disabled { opacity:0.55; cursor:default; }
+.digit-pop { text-align:center; font-family:'Cinzel',serif; font-size:1.5rem; color:var(--amber); margin-top:9px; opacity:0; transform:scale(0.5); transition:opacity 0.4s, transform 0.4s; }
+.digit-pop.on { opacity:1; transform:scale(1); }
+.vault-row { display:flex; justify-content:center; gap:8px; margin-bottom:18px; }
+.vd { width:48px; height:58px; background:var(--stone2); border:2px solid var(--stone3); border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:1.7rem; color:var(--text3); transition:all 0.35s; }
+.vd.on { background:rgba(232,160,48,0.16); border-color:var(--amber); color:var(--amber); animation:pop 0.3s ease; }
+
+/* banners */
+.g-banner { display:none; background:rgba(39,174,96,0.10); border:2px solid var(--green); border-radius:10px; padding:20px; text-align:center; margin-top:18px; animation:rise 0.45s ease; }
+.g-banner.on { display:block; }
+.b-ico { font-size:2.8rem; display:block; margin-bottom:7px; }
+.b-hl { font-family:'Cinzel',serif; font-size:1rem; color:#6ee7a0; margin-bottom:7px; }
+.g-banner p { font-size:0.88rem; color:var(--text); margin-bottom:12px; line-height:1.6; }
+
+/* win */
+#g-win { display:none; text-align:center; padding:30px 18px; animation:rise 0.5s ease; }
+#g-win.on { display:block; }
+.win-ico { font-size:4.5rem; display:block; margin-bottom:12px; animation:float 2s ease-in-out infinite alternate; }
+@keyframes float { from{transform:translateY(0)} to{transform:translateY(-12px)} }
+.win-title { font-family:'Cinzel',serif; font-size:clamp(1.6rem,5vw,2.2rem); color:var(--amber); text-shadow:0 0 40px rgba(232,160,48,0.55); margin-bottom:9px; }
+.win-msg { font-size:1rem; color:var(--text); max-width:420px; margin:0 auto 22px; line-height:1.75; }
+.score-card { background:var(--stone); border:1px solid var(--amber3); border-radius:10px; max-width:320px; margin:0 auto 18px; overflow:hidden; }
+.sc-hd { background:var(--amber3); color:var(--bg); padding:9px 14px; font-family:'Cinzel',serif; font-size:0.8rem; letter-spacing:1px; }
+.sc-row { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-bottom:1px solid var(--stone3); font-size:0.88rem; }
+.sc-row:last-child { border-bottom:none; }
+.sc-n { color:var(--amber); font-weight:700; }
+.sc-note { font-size:0.76rem; color:var(--text3); text-align:center; margin-bottom:20px; }
+
+/* action buttons inside game */
+.g-btn {
+  background:var(--amber3); color:var(--bg); border:none;
+  padding:10px 24px; border-radius:7px; font-family:'Cinzel',serif;
+  font-size:0.88rem; letter-spacing:0.5px; cursor:pointer; transition:all 0.2s; display:inline-block;
+}
+.g-btn:hover { background:var(--amber); transform:translateY(-2px); box-shadow:0 5px 14px rgba(232,160,48,0.3); }
+.g-btn:disabled { opacity:0.35; cursor:default; transform:none; box-shadow:none; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:22px; left:50%;
+  transform:translateX(-50%) translateY(90px);
+  background:#160a05; border:1px solid var(--red); color:#f08070;
+  padding:10px 18px; border-radius:8px; font-size:0.86rem;
+  max-width:360px; text-align:center; transition:transform 0.3s; z-index:400;
+  pointer-events:none; line-height:1.5;
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+#ov { display:none; position:fixed; inset:0; z-index:50; }
+
+/* ══════════════════════════════════════
+   FOOTER
+══════════════════════════════════════ */
+footer {
+  background: var(--stone);
+  border-top: 1px solid var(--stone3);
+  padding: 44px clamp(20px,5vw,60px);
+  text-align: center;
+}
+.footer-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.1rem; color: var(--amber3);
+  margin-bottom: 10px;
+}
+.footer-tagline { font-size: 0.85rem; color: var(--text3); font-style: italic; margin-bottom: 22px; line-height: 1.65; }
+.footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+.footer-links a { color: var(--text3); font-size: 0.78rem; font-family: 'Cinzel', serif; letter-spacing: 1px; text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--amber2); }
+.footer-copy { font-size: 0.72rem; color: var(--text3); opacity: 0.5; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE NAV
+══════════════════════════════════════ */
+@media(max-width:640px){
+  .nav-links { display:none; }
+  .torch { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════ -->
+<nav>
+  <a href="#" class="nav-logo">🔐 <span>GRAMMAR</span> ESCAPE</a>
+  <div class="nav-links">
+    <a href="#how">Rooms</a>
+    <a href="#features">Features</a>
+    <a href="#teacher">Teachers</a>
+    <a href="#game" class="nav-cta">Play Now</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ═════════════════════════════ -->
+<section class="hero">
+  <canvas id="embers"></canvas>
+
+  <div class="torch left">
+    <div class="torch-glow"></div>
+    <div class="torch-flame">🔥</div>
+    <div class="torch-body"></div>
+  </div>
+  <div class="torch right">
+    <div class="torch-glow"></div>
+    <div class="torch-flame">🔥</div>
+    <div class="torch-body"></div>
+  </div>
+
+  <div class="hero-badge">✦ CEFR A2 / B1 &nbsp;·&nbsp; ENGLISH AS A FOREIGN LANGUAGE ✦</div>
+
+  <h1 class="hero-title">
+    <em>Past Tense</em>
+    Grammar<br>Escape
+  </h1>
+
+  <p class="hero-sub">
+    Three rooms. Four tenses. One way out.<br>
+    Solve the grammar puzzles, collect the keys, and escape!
+  </p>
+
+  <div class="hero-btns">
+    <a href="#game" class="btn-primary">🗝️ Start Playing</a>
+    <a href="#how" class="btn-secondary">How It Works</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-n">3</span><span class="stat-l">ROOMS</span></div>
+    <div class="stat"><span class="stat-n">4</span><span class="stat-l">PAST TENSES</span></div>
+    <div class="stat"><span class="stat-n">A2/B1</span><span class="stat-l">CEFR LEVEL</span></div>
+    <div class="stat"><span class="stat-n">∞</span><span class="stat-l">ATTEMPTS</span></div>
+  </div>
+
+  <div class="scroll-cue">
+    SCROLL
+    <svg width="16" height="22" viewBox="0 0 16 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 2V16M8 16L3 11M8 16L13 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ HOW IT WORKS ══════════════════════ -->
+<section id="how">
+  <div class="sec-inner">
+    <div class="sec-label">THE THREE ROOMS</div>
+    <h2 class="sec-title">How the Escape Room Works</h2>
+    <p class="sec-body">
+      Each room contains a unique grammar challenge. Solve all the puzzles to collect the secret keyword or code, then unlock the door to the next room. Complete all three rooms to escape!
+    </p>
+
+    <div class="how-grid">
+      <div class="room-card">
+        <div class="rc-header">
+          <div class="rc-num">ROOM 1 OF 3</div>
+          <span class="rc-ico">📚</span>
+          <div class="rc-name">The Library</div>
+          <div class="rc-tense">Simple Past Tense</div>
+        </div>
+        <div class="rc-body">
+          <p>Eight sentences are displayed on library bookshelves. Identify which bold verbs are correctly written in the Simple Past — then collect the hidden letters to spell the keyword.</p>
+          <div class="rc-tags">
+            <span class="tag">Regular verbs</span>
+            <span class="tag">Irregular verbs</span>
+            <span class="tag">Letter collector</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="room-card">
+        <div class="rc-header">
+          <div class="rc-num">ROOM 2 OF 3</div>
+          <span class="rc-ico">🔎</span>
+          <div class="rc-name">The Detective's Office</div>
+          <div class="rc-tense">Past Continuous vs Simple Past</div>
+        </div>
+        <div class="rc-body">
+          <p>Detective Morgan's case notes are full of mistakes! Find the six grammar errors, click on each underlined mistake, and choose the correct tense form to crack open the safe.</p>
+          <div class="rc-tags">
+            <span class="tag">Paragraph editing</span>
+            <span class="tag">While / When</span>
+            <span class="tag">Safe cracker</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="room-card">
+        <div class="rc-header">
+          <div class="rc-num">ROOM 3 OF 3</div>
+          <span class="rc-ico">🏛️</span>
+          <div class="rc-name">The Secret Vault</div>
+          <div class="rc-tense">Past Perfect Tense</div>
+        </div>
+        <div class="rc-body">
+          <p>Look at pairs of past events and choose the sentence that correctly uses the Past Perfect. Each correct answer reveals one digit of the vault's secret five-digit code.</p>
+          <div class="rc-tags">
+            <span class="tag">had + participle</span>
+            <span class="tag">Timeline logic</span>
+            <span class="tag">Code cracker</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ FEATURES ══════════════════════════ -->
+<section id="features">
+  <div class="sec-inner">
+    <div class="sec-label">DESIGNED FOR LEARNING</div>
+    <h2 class="sec-title">Scaffolded. Supportive. Fun.</h2>
+    <p class="sec-body">
+      Every design decision supports language acquisition. Students feel challenged but never lost.
+    </p>
+
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="feat-ico">💡</div>
+        <div class="feat-title">Reveal-on-demand hints</div>
+        <p>Each room has a grammar help box that students can open when they need it — keeping the challenge alive without frustration.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">🎯</div>
+        <div class="feat-title">Specific error feedback</div>
+        <p>Wrong answers don't just say "incorrect" — they explain <em>why</em>, pointing students back to the right concept.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">⏳</div>
+        <div class="feat-title">No time pressure</div>
+        <p>Designed as a low-anxiety, mastery-focused activity. Students can take as long as they need to think and choose.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">📊</div>
+        <div class="feat-title">Teacher score report</div>
+        <p>The win screen shows attempts per room — a quick snapshot teachers can use to spark a discussion about where pupils struggled.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">📱</div>
+        <div class="feat-title">Tablet & mobile ready</div>
+        <p>Works on school iPads, Chromebooks, and phones. No app or installation needed — just open and play.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">🔄</div>
+        <div class="feat-title">Replay anytime</div>
+        <p>One-click reset returns to Room 1. Great for revision sessions or when a student wants to improve their score.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ TEACHER NOTES ═════════════════════ -->
+<section id="teacher">
+  <div class="sec-inner">
+    <div class="teacher-inner">
+      <div class="teacher-art">
+        <div class="board">
+          <div class="board-title">LESSON OBJECTIVES</div>
+          <div class="board-row"><span class="board-icon">✅</span><div class="board-text"><strong>Simple Past:</strong> regular &amp; irregular verb forms, completed past actions</div></div>
+          <div class="board-row"><span class="board-icon">✅</span><div class="board-text"><strong>Past Continuous:</strong> ongoing past actions with <em>while</em> and <em>when</em></div></div>
+          <div class="board-row"><span class="board-icon">✅</span><div class="board-text"><strong>Past Perfect:</strong> sequencing two past events with <em>had + participle</em></div></div>
+          <div class="board-row"><span class="board-icon">📋</span><div class="board-text">CEFR Level: <strong>A2 / B1</strong><br>Age group: Middle school (11–14)</div></div>
+        </div>
+      </div>
+
+      <div class="teacher-content">
+        <div class="sec-label">FOR TEACHERS</div>
+        <h2 class="sec-title">Built with Pedagogy in Mind</h2>
+        <p class="sec-body">The game scaffolds knowledge progressively across three rooms — from form recognition, to contextualised editing, to conceptual sequencing. Here's how to use it:</p>
+        <ul class="notes-list">
+          <li><span class="ni">①</span><span>Use as a <strong>post-lesson consolidation</strong> activity after teaching each tense, or as a complete revision lesson covering all past tenses.</span></li>
+          <li><span class="ni">②</span><span>The <strong>attempt counter</strong> on the win screen tells you which rooms caused the most difficulty — use this for targeted follow-up.</span></li>
+          <li><span class="ni">③</span><span>Students can work <strong>individually or in pairs</strong>. Pair work often generates productive grammar discussion ("is it was walking or walked here?").</span></li>
+          <li><span class="ni">④</span><span>The hint boxes contain <strong>reference tables</strong> students can revisit. Encourage weaker learners to open them freely — there's no penalty.</span></li>
+          <li><span class="ni">⑤</span><span>The reset button lets students <strong>replay immediately</strong> — excellent for self-directed revision or homework.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ GAME SECTION ══════════════════════ -->
+<section id="game">
+  <div class="game-header">
+    <div class="sec-label">THE GAME</div>
+    <h2 class="sec-title">Ready to Escape?</h2>
+    <p>Three rooms of grammar puzzles await. Use the hint buttons if you need help — and good luck, detective!</p>
+  </div>
+
+  <div id="gw">
+    <!-- ── TOP BAR ── -->
+    <div id="topbar">
+      <span class="t-logo">🔐 ESCAPE</span>
+      <div class="steps">
+        <div class="step active" id="s1"></div>
+        <div class="step" id="s2"></div>
+        <div class="step" id="s3"></div>
+      </div>
+      <span id="room-label">ROOM 1 / 3</span>
+      <button id="reset-btn" onclick="resetGame()">↺ Reset</button>
+    </div>
+
+    <div class="gwrap">
+
+    <!-- ══ ROOM 1 ══ -->
+    <div class="g-room on" id="room1">
+      <div class="rh">
+        <div class="rh-title">📚 The Library</div>
+        <div class="rh-sub">Simple Past — Regular &amp; Irregular Verbs</div>
+      </div>
+      <div class="g-panel"><strong>🎯 Mission:</strong> Some sentences contain a verb in the <strong>Simple Past</strong>. Click each correct sentence to collect its <strong>secret letter</strong>. Collect all the letters to spell the keyword and unlock the next room!</div>
+      <button class="hint-btn" onclick="toggleHint('h1')">💡 Show Grammar Help</button>
+      <div class="hint-box" id="h1">
+        <h4>📖 Simple Past — Quick Reference</h4>
+        <p style="margin-bottom:9px">Use the <strong>Simple Past</strong> for a completed action in the past. Regular verbs add <strong>‑ed</strong>. Irregular verbs have special forms.</p>
+        <table class="htable">
+          <tr><th>Base form</th><th>Simple Past</th><th>Type</th></tr>
+          <tr><td>walk</td><td>walked</td><td>regular</td></tr>
+          <tr><td>visit</td><td>visited</td><td>regular</td></tr>
+          <tr><td>stay</td><td>stayed</td><td>regular</td></tr>
+          <tr><td>open</td><td>opened</td><td>regular</td></tr>
+          <tr><td>look</td><td>looked</td><td>regular</td></tr>
+          <tr><td>go</td><td>went</td><td>irregular</td></tr>
+          <tr><td>see</td><td>saw</td><td>irregular</td></tr>
+          <tr><td>eat</td><td>ate</td><td>irregular</td></tr>
+          <tr><td>write</td><td>wrote</td><td>irregular</td></tr>
+          <tr><td>find</td><td>found</td><td>irregular</td></tr>
+        </table>
+      </div>
+      <div class="shelf" id="shelf"></div>
+      <div class="kw-label">Collect the letters to spell the keyword:</div>
+      <div class="kw-row" id="kwrow"></div>
+      <div class="g-banner" id="r1-done">
+        <span class="b-ico">🗝️</span>
+        <div class="b-hl">You found the keyword: S·O·L·V·E·D !</div>
+        <p>Well done! You identified all the Simple Past verbs.<br>The library door creaks open…</p>
+        <button class="g-btn" onclick="goTo(2)">Enter the Detective's Office →</button>
+      </div>
+    </div>
+
+    <!-- ══ ROOM 2 ══ -->
+    <div class="g-room" id="room2">
+      <div class="rh">
+        <div class="rh-title">🔎 The Detective's Office</div>
+        <div class="rh-sub">Past Continuous vs Simple Past</div>
+      </div>
+      <div class="g-panel"><strong>🎯 Mission:</strong> Detective Morgan's notes have <strong>6 grammar mistakes</strong>. Each error is <span style="color:#f08070;text-decoration:underline;text-underline-offset:3px">underlined in red</span>. Click on each mistake, choose the correct form, and fix all 6 to open the safe!</div>
+      <button class="hint-btn" onclick="toggleHint('h2')">💡 Show Grammar Help</button>
+      <div class="hint-box" id="h2">
+        <h4>🔎 Past Continuous vs Simple Past</h4>
+        <p style="margin-bottom:8px"><strong>Past Continuous</strong> (was/were + verb‑ing): an action that was <em>in progress</em> at a moment in the past.</p>
+        <p style="margin-bottom:8px"><strong>Simple Past</strong> (verb + ‑ed / irregular): a <em>completed</em> action.</p>
+        <div class="eg">✅ <em>"<strong>While</strong> she <strong>was walking</strong> to school, she <strong>found</strong> a key."</em></div>
+        <div class="eg">✅ <em>"<strong>When</strong> I arrived, Tom <strong>was reading</strong> a book."</em></div>
+      </div>
+      <div class="case-notes" id="casenotes"></div>
+      <div class="safe-row">
+        <span class="safe-icon" id="safe-ico">🔒</span>
+        <div class="fix-count">Errors fixed: <span id="nfixed">0</span> / 6</div>
+      </div>
+      <div class="g-banner" id="r2-done">
+        <span class="b-ico">🔓</span>
+        <div class="b-hl">The safe swings open! Keyword: H·I·D·D·E·N</div>
+        <p>Excellent work! You know when to use Past Continuous and Simple Past.<br>A hidden door appears at the back of the office…</p>
+        <button class="g-btn" onclick="goTo(3)">Enter the Secret Vault →</button>
+      </div>
+    </div>
+
+    <!-- ══ ROOM 3 ══ -->
+    <div class="g-room" id="room3">
+      <div class="rh">
+        <div class="rh-title">🏛️ The Secret Vault</div>
+        <div class="rh-sub">Past Perfect Tense</div>
+      </div>
+      <div class="g-panel"><strong>🎯 Mission:</strong> Look at each pair of events and choose the sentence that <strong>correctly</strong> uses the <strong>Past Perfect</strong>. Each correct answer reveals one digit of the <strong>5‑digit vault code</strong>!</div>
+      <button class="hint-btn" onclick="toggleHint('h3')">💡 Show Grammar Help</button>
+      <div class="hint-box" id="h3">
+        <h4>🏛️ Past Perfect — Quick Reference</h4>
+        <p style="margin-bottom:8px">Use <strong>Past Perfect</strong> (had + past participle) when one past action happened <em>before</em> another past action.</p>
+        <div class="eg">📅 Event 1 (earlier): She left. &nbsp;&nbsp; 📅 Event 2 (later): I arrived.<br>✅ <em>"When I arrived, she <strong>had already left</strong>."</em></div>
+        <p style="margin-top:8px"><strong>Signal words:</strong> <span style="color:var(--amber2)">already · just · before · after · by the time · never</span></p>
+      </div>
+      <div class="puzzles" id="puzzles"></div>
+      <div class="kw-label">Vault code:</div>
+      <div class="vault-row" id="vaultrow"></div>
+      <div style="text-align:center;margin-top:14px;margin-bottom:18px">
+        <button class="g-btn" id="vault-btn" onclick="openVault()" disabled>🔓 Open the Vault</button>
+      </div>
+      <div class="g-banner" id="r3-done">
+        <span class="b-ico">🎉</span>
+        <div class="b-hl">THE VAULT IS OPEN — YOU ESCAPED!</div>
+      </div>
+    </div>
+
+    <!-- ══ WIN ══ -->
+    <div id="g-win">
+      <span class="win-ico">🏆</span>
+      <div class="win-title">You Escaped!</div>
+      <p class="win-msg">Amazing! You used the Simple Past, Past Continuous, and Past Perfect to solve all three rooms. You are a true grammar detective! 🕵️</p>
+      <div class="score-card">
+        <div class="sc-hd">📊 SCORE SUMMARY</div>
+        <div class="sc-row"><span>📚 Room 1 — The Library</span><span class="sc-n" id="sc1">—</span></div>
+        <div class="sc-row"><span>🔎 Room 2 — Detective's Office</span><span class="sc-n" id="sc2">—</span></div>
+        <div class="sc-row"><span>🏛️ Room 3 — Secret Vault</span><span class="sc-n" id="sc3">—</span></div>
+      </div>
+      <p class="sc-note">Fewer attempts = better. Your teacher can use this for discussion! 🎓</p>
+      <button class="g-btn" onclick="resetGame()">↺ Play Again</button>
+    </div>
+
+    </div><!-- gwrap -->
+  </div><!-- gw -->
+</section>
+
+<!-- ══ FOOTER ════════════════════════════ -->
+<div class="divider"></div>
+<footer>
+  <div class="footer-logo">🔐 Grammar Escape</div>
+  <p class="footer-tagline">An interactive past tense adventure for EFL middle school learners · CEFR A2/B1</p>
+  <div class="footer-links">
+    <a href="#how">The Rooms</a>
+    <a href="#features">Features</a>
+    <a href="#teacher">For Teachers</a>
+    <a href="#game">Play Now</a>
+  </div>
+  <p class="footer-copy">Designed for the classroom. Built with ❤️ for language learners.</p>
+</footer>
+
+<!-- Toast & overlay -->
+<div id="toast"></div>
+<div id="ov" onclick="closeDrop()"></div>
+
+<!-- ══════════════════════════════════════
+     EMBERS ANIMATION
+══════════════════════════════════════ -->
+<script>
+(function(){
+  const c = document.getElementById('embers');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  let W, H, particles=[];
+  function resize(){ W=c.width=c.offsetWidth; H=c.height=c.offsetHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function mkP(){
+    return {
+      x: Math.random()*W,
+      y: H + 10,
+      r: Math.random()*2+0.5,
+      vx: (Math.random()-0.5)*0.6,
+      vy: -(Math.random()*1.2+0.4),
+      life: 1,
+      decay: Math.random()*0.004+0.002
+    };
+  }
+
+  for(let i=0;i<60;i++){
+    const p = mkP();
+    p.y = Math.random()*H;
+    p.life = Math.random();
+    particles.push(p);
+  }
+
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    if(Math.random()<0.18) particles.push(mkP());
+    particles = particles.filter(p=>p.life>0);
+    particles.forEach(p=>{
+      p.x += p.vx; p.y += p.vy;
+      p.vx += (Math.random()-0.5)*0.05;
+      p.life -= p.decay;
+      const a = p.life * 0.55;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,${120+Math.floor(Math.random()*60)},20,${a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+
+<!-- ══════════════════════════════════════
+     GAME LOGIC
+══════════════════════════════════════ -->
+<script>
+const S1=[
+  {id:0,pre:'She',verb:'stayed',post:'at home all weekend with her family.',ok:true,ltr:'S',fb:null},
+  {id:1,pre:'They',verb:'opened',post:'the old wooden door very slowly.',ok:true,ltr:'O',fb:null},
+  {id:2,pre:'He',verb:'is reading',post:'a mystery book right now.',ok:false,ltr:null,fb:"That's Present Continuous — it describes NOW, not the past!"},
+  {id:3,pre:'The detective',verb:'looked',post:'carefully at the old map on the table.',ok:true,ltr:'L',fb:null},
+  {id:4,pre:'Maria',verb:'visited',post:'her grandmother last Sunday afternoon.',ok:true,ltr:'V',fb:null},
+  {id:5,pre:'We',verb:'will find',post:'the answer to this question very soon.',ok:false,ltr:null,fb:"That's the Future tense — we need what HAPPENED in the past!"},
+  {id:6,pre:'Tom',verb:'ate',post:'a big sandwich for lunch yesterday.',ok:true,ltr:'E',fb:null},
+  {id:7,pre:'My friend',verb:'saw',post:'something strange near the old library.',ok:true,ltr:'D',fb:null},
+];
+
+const S2=[
+  {t:'text',s:'Last Tuesday, Detective Morgan '},
+  {t:'err',id:0,bad:'was investigate',good:'was investigating',opts:['was investigate','was investigating','investigates'],tip:"Past Continuous = was/were + verb‑ING. Don't forget the ‑ing!"},
+  {t:'text',s:' a strange case in the old part of town. While she walked through the park, she '},
+  {t:'err',id:1,bad:'was finding',good:'found',opts:['was finding','found','finds'],tip:'A sudden completed action uses Simple Past, not Past Continuous.'},
+  {t:'text',s:' a torn piece of paper on the ground. At that moment, it was raining heavily outside. She '},
+  {t:'err',id:2,bad:'was read',good:'was reading',opts:['was read','was reading','read'],tip:'An action in progress = was/were + verb‑ING. Check your ‑ing ending!'},
+  {t:'text',s:' the note carefully when she heard a loud noise behind her. The suspect '},
+  {t:'err',id:3,bad:'was run',good:'was running',opts:['was run','was running','ran'],tip:'An action still in progress when she arrived = Past Continuous.'},
+  {t:'text',s:' away when she arrived at the scene. She called her partner immediately on her phone. While they '},
+  {t:'err',id:4,bad:'were search',good:'were searching',opts:['were search','were searching','searched'],tip:"With 'while' + an ongoing action, use Past Continuous: were + verb‑ING."},
+  {t:'text',s:' the area together, they discovered a small hidden box under the bench. The box '},
+  {t:'err',id:5,bad:'was containing',good:'contained',opts:['was containing','contained','contains'],tip:'"Contain" is a state verb — it uses Simple Past, not Continuous form.'},
+  {t:'text',s:' an old rusty key and a handwritten map.'},
+];
+
+const S3=[
+  {evtA:"Emma finished her homework.",evtB:"Emma's mum called her for dinner.",digit:'4',q:'Choose the sentence that correctly shows which event happened first:',cs:[
+    {s:'By the time her mum called, Emma had already finished her homework.',ok:true},
+    {s:'By the time her mum called, Emma has already finished her homework.',ok:false,fb:'Use "had" (Past Perfect), not "has" (Present Perfect). Both events are in the past.'},
+    {s:'By the time her mum called, Emma already finished her homework.',ok:false,fb:'You need "had" before the past participle: had finished.'},
+  ]},
+  {evtA:"The train left the station.",evtB:"Tom and Lisa arrived at the platform.",digit:'7',q:'Choose the sentence that correctly shows which event happened first:',cs:[
+    {s:'When Tom and Lisa arrived, the train already left.',ok:false,fb:'Add "had" before "left" to form Past Perfect: had already left.'},
+    {s:'When Tom and Lisa arrived, the train had already left.',ok:true},
+    {s:'When Tom and Lisa arrived, the train was already leaving.',ok:false,fb:'Past Continuous shows an action in progress — here the action was completely finished.'},
+  ]},
+  {evtA:"Jake studied the old map carefully.",evtB:"Jake found the secret room.",digit:'2',q:'Choose the sentence that correctly shows which event happened first:',cs:[
+    {s:'Jake found the room because he was studying the map.',ok:false,fb:'"Was studying" shows an action in progress — but the studying was fully completed before he found the room.'},
+    {s:'Jake found the room because he studied the map.',ok:false,fb:'Use Past Perfect (had studied) to show that studying came first.'},
+    {s:'Jake found the room because he had studied the map.',ok:true},
+  ]},
+  {evtA:"Maria ate something strange at lunch.",evtB:"Maria felt very sick that evening.",digit:'9',q:'Choose the sentence that correctly shows which event happened first:',cs:[
+    {s:'Maria felt sick because she had eaten something bad.',ok:true},
+    {s:'Maria felt sick because she was eating something bad.',ok:false,fb:'The eating was completed before she felt sick. Use Past Perfect, not Past Continuous.'},
+    {s:'Maria felt sick because she has eaten something bad.',ok:false,fb:'Use "had" (Past Perfect), not "has" (Present Perfect).'},
+  ]},
+  {evtA:"The detective solved the mystery.",evtB:"The detective went home to rest.",digit:'1',q:'Choose the sentence that correctly shows which event happened first:',cs:[
+    {s:'The detective went home after she had solved the mystery.',ok:true},
+    {s:'The detective went home after she solved the mystery.',ok:false,fb:'Use Past Perfect (had solved) to clearly show which action came first.'},
+    {s:'The detective went home after she has solved the mystery.',ok:false,fb:'Use "had" (Past Perfect), not "has" (Present Perfect).'},
+  ]},
+];
+
+let G = makeState();
+function makeState(){ return {cur:1, att:{1:0,2:0,3:0}, r1:{got:new Set(),total:S1.filter(s=>s.ok).length,done:false}, r2:{fixed:new Set(),done:false}, r3:{solved:Array(5).fill(false),done:false}}; }
+
+/* ROOM 1 */
+function renderR1(){
+  const shelf=document.getElementById('shelf'); shelf.innerHTML='';
+  S1.forEach(s=>{
+    const d=document.createElement('div'); d.className='book'; d.id='bk'+s.id;
+    d.innerHTML=`${s.pre} <span class="v">${s.verb}</span> ${s.post}<span class="book-ltr">${s.ltr||''}</span>`;
+    d.onclick=()=>clickBook(s.id); shelf.appendChild(d);
+  });
+  const row=document.getElementById('kwrow'); row.innerHTML='';
+  S1.filter(s=>s.ok).forEach(s=>{ const t=document.createElement('div'); t.className='kw-tile'; t.id='kw'+s.id; t.textContent='_'; row.appendChild(t); });
+}
+function clickBook(id){
+  if(G.r1.done) return;
+  const s=S1.find(x=>x.id===id); const el=document.getElementById('bk'+id);
+  if(!el||el.classList.contains('picked')||el.classList.contains('shaking')) return;
+  G.att[1]++;
+  if(s.ok){
+    el.classList.add('picked'); G.r1.got.add(id);
+    const t=document.getElementById('kw'+id); if(t){t.textContent=s.ltr;t.classList.add('lit');}
+    if(G.r1.got.size===G.r1.total){ G.r1.done=true; setTimeout(()=>document.getElementById('r1-done').classList.add('on'),450); }
+  } else {
+    el.classList.add('shaking'); toast(s.fb||"That's not Simple Past. Try again!");
+    setTimeout(()=>el.classList.remove('shaking'),700);
+  }
+}
+
+/* ROOM 2 */
+function renderR2(){
+  const cn=document.getElementById('casenotes'); let html='';
+  S2.forEach(seg=>{ if(seg.t==='text'){html+=seg.s;} else {html+=`<span class="err-span" id="es${seg.id}" onclick="openDrop(${seg.id},event)">${seg.bad}</span>`;} });
+  cn.innerHTML=html;
+  document.getElementById('nfixed').textContent='0';
+  document.getElementById('safe-ico').textContent='🔒'; document.getElementById('safe-ico').classList.remove('open');
+}
+function openDrop(eid,ev){
+  ev.stopPropagation(); const span=document.getElementById('es'+eid);
+  if(span.classList.contains('ok')) return; closeDrop();
+  const seg=S2.find(s=>s.t==='err'&&s.id===eid);
+  const dd=document.createElement('div'); dd.className='cd'; dd.id='dd'+eid;
+  seg.opts.forEach(opt=>{ const dv=document.createElement('div'); dv.textContent=opt; dv.onclick=e=>{e.stopPropagation();pickOpt(eid,opt,seg);}; dd.appendChild(dv); });
+  span.style.position='relative'; span.appendChild(dd);
+  document.getElementById('ov').style.display='block';
+}
+function closeDrop(){ document.querySelectorAll('.cd').forEach(d=>d.remove()); document.getElementById('ov').style.display='none'; }
+function pickOpt(eid,chosen,seg){
+  closeDrop(); G.att[2]++;
+  const span=document.getElementById('es'+eid);
+  if(chosen===seg.good){
+    span.textContent=seg.good; span.classList.add('ok'); span.onclick=null;
+    G.r2.fixed.add(eid); document.getElementById('nfixed').textContent=G.r2.fixed.size;
+    if(G.r2.fixed.size===6){ G.r2.done=true; const ico=document.getElementById('safe-ico'); ico.classList.add('open'); ico.textContent='🔓'; setTimeout(()=>document.getElementById('r2-done').classList.add('on'),650); }
+  } else {
+    span.classList.add('bad-flash'); toast(seg.tip||'Not correct. Think about which tense is needed here!');
+    setTimeout(()=>span.classList.remove('bad-flash'),500);
+  }
+}
+
+/* ROOM 3 */
+function renderR3(){
+  const pc=document.getElementById('puzzles'); pc.innerHTML='';
+  S3.forEach((p,i)=>{
+    const card=document.createElement('div'); card.className='pcard'; card.id='pc'+i;
+    let chtml=p.cs.map((c,ci)=>`<button class="cbtn" id="cb${i}_${ci}" onclick="pickC(${i},${ci})">${c.s}</button>`).join('');
+    card.innerHTML=`<div class="pcard-hd">🧩 PUZZLE ${i+1} OF 5</div><div class="evt-pair"><div class="evt"><div class="evt-lbl">EVENT A</div>${p.evtA}</div><div class="evt"><div class="evt-lbl">EVENT B</div>${p.evtB}</div></div><div class="q-lbl">${p.q}</div><div class="choices">${chtml}</div><div class="digit-pop" id="dp${i}">🔢 Digit unlocked: <strong>${p.digit}</strong></div>`;
+    pc.appendChild(card);
+  });
+  const vr=document.getElementById('vaultrow'); vr.innerHTML='';
+  for(let i=0;i<5;i++){const d=document.createElement('div');d.className='vd';d.id='vd'+i;d.textContent='?';vr.appendChild(d);}
+  document.getElementById('vault-btn').disabled=true;
+}
+function pickC(pi,ci){
+  if(G.r3.solved[pi]) return;
+  G.att[3]++; const p=S3[pi],c=p.cs[ci];
+  const btn=document.getElementById(`cb${pi}_${ci}`); const card=document.getElementById('pc'+pi);
+  if(c.ok){
+    btn.classList.add('right'); p.cs.forEach((_,i)=>document.getElementById(`cb${pi}_${i}`).disabled=true);
+    G.r3.solved[pi]=true; document.getElementById('dp'+pi).classList.add('on');
+    const vd=document.getElementById('vd'+pi); vd.textContent=p.digit; vd.classList.add('on');
+    card.classList.add('done');
+    if(G.r3.solved.every(v=>v)){G.r3.done=true;document.getElementById('vault-btn').disabled=false;}
+  } else {
+    btn.classList.add('wrong'); toast(c.fb||'Not quite. Check: had + past participle.');
+    setTimeout(()=>btn.classList.remove('wrong'),900);
+  }
+}
+function openVault(){ if(!G.r3.done) return; document.getElementById('r3-done').classList.add('on'); setTimeout(showWin,1600); }
+
+/* NAV */
+function goTo(n){
+  document.getElementById('room'+G.cur).classList.remove('on'); G.cur=n;
+  document.getElementById('room'+n).classList.add('on'); updBar(n);
+  document.getElementById('game').scrollIntoView({behavior:'smooth'});
+}
+function updBar(n){
+  for(let i=1;i<=3;i++){ const el=document.getElementById('s'+i); el.className='step'+(i<n?' done':i===n?' active':''); }
+  document.getElementById('room-label').textContent=n<=3?`ROOM ${n} / 3`:'✅ ESCAPED';
+}
+function showWin(){
+  document.getElementById('room3').classList.remove('on');
+  document.getElementById('g-win').classList.add('on');
+  document.getElementById('sc1').textContent=G.att[1]+' attempt'+(G.att[1]!==1?'s':'');
+  document.getElementById('sc2').textContent=G.att[2]+' attempt'+(G.att[2]!==1?'s':'');
+  document.getElementById('sc3').textContent=G.att[3]+' attempt'+(G.att[3]!==1?'s':'');
+  updBar(4);
+  document.getElementById('game').scrollIntoView({behavior:'smooth'});
+}
+
+function toggleHint(id){
+  const b=document.getElementById(id); const btn=b.previousElementSibling; b.classList.toggle('on');
+  btn.textContent=b.classList.contains('on')?'💡 Hide Grammar Help':'💡 Show Grammar Help';
+}
+
+let _tt;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('show'),3800); }
+
+function resetGame(){
+  if(!confirm('Reset all progress and return to Room 1?')) return;
+  closeDrop(); G=makeState();
+  document.getElementById('g-win').classList.remove('on');
+  [1,2,3].forEach(n=>document.getElementById('room'+n).classList.remove('on'));
+  renderR1(); renderR2(); renderR3();
+  ['r1-done','r2-done','r3-done'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['h1','h2','h3'].forEach(id=>{ const b=document.getElementById(id); b.classList.remove('on'); b.previousElementSibling.textContent='💡 Show Grammar Help'; });
+  document.getElementById('room1').classList.add('on'); updBar(1);
+  document.getElementById('game').scrollIntoView({behavior:'smooth'});
+}
+
+renderR1(); renderR2(); renderR3();
+</script>
+</body>
+</html>
